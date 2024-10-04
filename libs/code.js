@@ -1,552 +1,1127 @@
 var canvas,
-    stage,
-    exportRoot,
-    anim_container,
-    dom_overlay_container,
-    fnStartAnimation;
+  stage,
+  exportRoot,
+  anim_container,
+  dom_overlay_container,
+  fnStartAnimation;
 
 var soundsArr;
 var video, video_div;
-var clickSd, rightFbSd, wrongFbSd, quizSd, rightAnswer, wrongAnswer;
+var clickSd,
+  goodSd,
+  errorSd,
+  infoSd,
+  timeOutSd,
+  rightFbSd,
+  wrongFbSd,
+  tryFbSd,
+  tryTimeFbSd,
+  intro,
+  intro2;
 
-// var timeCounter = 40;
-var ansTrue = 4;
-var ansTrueBoolen = true;
-var ansNumber = 6;
-var numOfAns = 6;
-var contAns = 1;
-var correctAns = false;
+var numOfPlaces = 8,
+  numOfAns = 8,
+  counter = 0;
+counAns = 1;
 
-var score = 0,
-    prevAns = null,
-    newAns = null;
+var score = 0;
 
 var attempts = 0,
-    maxAttempts = 3;
+  maxAttempts = 3;
 
-var counter = 0;
+var timerInterval = null,
+  timerFrame = 0,
+  timeCounter = 60;
 
 var overOut = [];
+var retryV = false;
 var l = console.log;
+var closeInfo = false;
+var check_Answer_Index = false;
 
-var isFirefox = typeof InstallTrigger !== "undefined";
-/*========Start=======*/
-
-var correctAnswersCountV = 0;
-
-/*========End=======*/
+var bounds;
 
 function init()
 {
-    canvas = document.getElementById("canvas");
-    anim_container = document.getElementById("animation_container");
-    dom_overlay_container = document.getElementById("dom_overlay_container");
-    var comp = AdobeAn.getComposition("2ECE35B8F0EAB545AEB7652990DC814A");
-    var libs = comp.getLibrary();
-    var loader = new createjs.LoadQueue(false);
-    loader.addEventListener("fileload", function (evt)
-    {
-        handleFileLoad(evt, comp);
-    });
-    loader.addEventListener("complete", function (evt)
-    {
-        handleComplete(evt, comp);
-    });
-    var libs = comp.getLibrary();
-    loader.loadManifest(libs.properties.manifest);
+  canvas = document.getElementById("canvas");
+  anim_container = document.getElementById("animation_container");
+  dom_overlay_container = document.getElementById("dom_overlay_container");
+  var comp = AdobeAn.getComposition("4449402ED19F8D46843797652F7EAE88");
+  var lib = comp.getLibrary();
+  var loader = new createjs.LoadQueue(false);
+  loader.addEventListener("fileload", function (evt)
+  {
+    handleFileLoad(evt, comp);
+  });
+  loader.addEventListener("complete", function (evt)
+  {
+    handleComplete(evt, comp);
+  });
+  var lib = comp.getLibrary();
+  loader.loadManifest(lib.properties.manifest);
 }
 function handleFileLoad(evt, comp)
 {
-    var images = comp.getImages();
-    if (evt && evt.item.type == "image")
-    {
-        images[evt.item.id] = evt.result;
-    }
+  var images = comp.getImages();
+  if (evt && evt.item.type == "image")
+  {
+    images[evt.item.id] = evt.result;
+  }
 }
-
 function handleComplete(evt, comp)
 {
-    //This function is always called, irrespective of the content. You can use the variable "stage" after it is created in token create_stage.
-    var lib = comp.getLibrary();
-    var ss = comp.getSpriteSheet();
-    exportRoot = new lib.Activity01();
-    stage = new lib.Stage(canvas);
-    //Registers the "tick" event listener.
-    var lib = comp.getLibrary();
-    var ss = comp.getSpriteSheet();
-    var queue = evt.currentTarget;
-    var ssMetadata = lib.ssMetadata;
-    for (i = 0; i < ssMetadata.length; i++)
-    {
-        ss[ssMetadata[i].name] = new createjs.SpriteSheet({
-            images: [queue.getResult(ssMetadata[i].name)],
-            frames: ssMetadata[i].frames,
-        });
-    }
-    fnStartAnimation = function ()
-    {
-        stage.addChild(exportRoot);
-        stage.enableMouseOver(10);
-        createjs.Touch.enable(stage);
-        document.ontouchmove = function (e)
-        {
-            e.preventDefault();
-        };
-        stage.mouseMoveOutside = true;
-        stage.update();
-        createjs.Ticker.setFPS(lib.properties.fps);
-        createjs.Ticker.addEventListener("tick", stage);
-        prepareTheStage();
-    };
-    //Code to support hidpi screens and responsive scaling.
-    function makeResponsive(isResp, respDim, isScale, scaleType)
-    {
-        var lastW,
-            lastH,
-            lastS = 1;
-        window.addEventListener("resize", resizeCanvas);
-        resizeCanvas();
+  //This function is always called, irrespective of the content. You can use the variable "stage" after it is created in token create_stage.
+  var lib = comp.getLibrary();
+  var ss = comp.getSpriteSheet();
+  var queue = evt.currentTarget;
+  var ssMetadata = lib.ssMetadata;
+  for (i = 0; i < ssMetadata.length; i++)
+  {
+    ss[ssMetadata[i].name] = new createjs.SpriteSheet({
+      images: [queue.getResult(ssMetadata[i].name)],
+      frames: ssMetadata[i].frames,
+    });
+  }
+  exportRoot = new lib._604L1AC10();
 
-        function resizeCanvas()
+  stage = new lib.Stage(canvas);
+  //Registers the "tick" event listener.
+  fnStartAnimation = function ()
+  {
+    stage.addChild(exportRoot);
+    stage.enableMouseOver(10);
+    createjs.Touch.enable(stage);
+    /* document.ontouchmove = function (e) {
+         e.preventDefault();
+     }*/
+    stage.mouseMoveOutside = true;
+    stage.update();
+    createjs.Ticker.setFPS(lib.properties.fps);
+    createjs.Ticker.addEventListener("tick", stage);
+    prepareTheStage();
+  };
+  //Code to support hidpi screens and responsive scaling.
+  function makeResponsive(isResp, respDim, isScale, scaleType)
+  {
+    var lastW,
+      lastH,
+      lastS = 1;
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function resizeCanvas()
+    {
+      var w = lib.properties.width,
+        h = lib.properties.height;
+      var iw = window.innerWidth,
+        ih = window.innerHeight;
+      var pRatio = window.devicePixelRatio || 1,
+        xRatio = iw / w,
+        yRatio = ih / h,
+        sRatio = 1;
+      if (isResp)
+      {
+        if (
+          (respDim == "width" && lastW == iw) ||
+          (respDim == "height" && lastH == ih)
+        )
         {
-            var w = lib.properties.width,
-                h = lib.properties.height;
-            var iw = window.innerWidth,
-                ih = window.innerHeight;
-            var pRatio = window.devicePixelRatio || 1,
-                xRatio = iw / w,
-                yRatio = ih / h,
-                sRatio = 1;
-            if (isResp)
-            {
-                if (
-                    (respDim == "width" && lastW == iw) ||
-                    (respDim == "height" && lastH == ih)
-                )
-                {
-                    sRatio = lastS;
-                } else if (!isScale)
-                {
-                    if (iw < w || ih < h) sRatio = Math.min(xRatio, yRatio);
-                } else if (scaleType == 1)
-                {
-                    sRatio = Math.min(xRatio, yRatio);
-                } else if (scaleType == 2)
-                {
-                    sRatio = Math.max(xRatio, yRatio);
-                }
-            }
-            canvas.width = w * pRatio * sRatio;
-            canvas.height = h * pRatio * sRatio;
-            canvas.style.width =
-                dom_overlay_container.style.width =
-                anim_container.style.width =
-                w * sRatio + "px";
-            canvas.style.height =
-                anim_container.style.height =
-                dom_overlay_container.style.height =
-                h * sRatio + "px";
-            stage.scaleX = pRatio * sRatio;
-            stage.scaleY = pRatio * sRatio;
-            lastW = iw;
-            lastH = ih;
-            lastS = sRatio;
-            stage.tickOnUpdate = false;
-            stage.update();
-            stage.tickOnUpdate = true;
+          sRatio = lastS;
+        } else if (!isScale)
+        {
+          if (iw < w || ih < h) sRatio = Math.min(xRatio, yRatio);
+        } else if (scaleType == 1)
+        {
+          sRatio = Math.min(xRatio, yRatio);
+        } else if (scaleType == 2)
+        {
+          sRatio = Math.max(xRatio, yRatio);
         }
+      }
+      canvas.width = w * pRatio * sRatio;
+      canvas.height = h * pRatio * sRatio;
+      canvas.style.width =
+        dom_overlay_container.style.width =
+        anim_container.style.width =
+        w * sRatio + "px";
+      canvas.style.height =
+        anim_container.style.height =
+        dom_overlay_container.style.height =
+        h * sRatio + "px";
+      stage.scaleX = pRatio * sRatio;
+      stage.scaleY = pRatio * sRatio;
+      lastW = iw;
+      lastH = ih;
+      lastS = sRatio;
+      stage.tickOnUpdate = false;
+      stage.update();
+      stage.tickOnUpdate = true;
+      canvas.style.display = "block";
+      anim_container.style.display = "block";
     }
-    makeResponsive(true, "both", true, 1);
-    AdobeAn.compositionLoaded(lib.properties.id);
-    fnStartAnimation();
-    exportRoot["playBtn"].cursor = "pointer";
-    exportRoot["playBtn"].addEventListener("click", playVideo);
+  }
+  makeResponsive(true, "both", true, 1);
+  AdobeAn.compositionLoaded(lib.properties.id);
+  fnStartAnimation();
+  exportRoot["playBtn"].cursor = "pointer";
+  exportRoot["playBtn"].addEventListener("click", playVideo);
 }
+
+// function playFn() {
+//     stopAllSounds();
+//     clickSd.play();
+//     exportRoot.play();
+// }
 
 function playVideo()
 {
-    exportRoot["playBtn"].alpha = 0;
-    exportRoot["playBtn"].removeEventListener("click", playVideo);
-    video_div = document.getElementById("videoPlay").style.display = "inline-block";
+  exportRoot["playBtn"].alpha = 0;
+  exportRoot["playBtn"].removeEventListener("click", playVideo);
+  video_div = document.getElementById("videoPlay").style.display =
+    "inline-block";
 
-    exportRoot.gotoAndStop('playAnimate');
-    video = document.getElementById("videoPlay").play();
-    // setTimeout(function ()
-    // {
-    // }, 300);
-    document.getElementById("videoPlay").onended = function ()
-    {
-        videoEnd();
-    };
+  video = document.getElementById("videoPlay").play();
+  setTimeout(function ()
+  {
+    exportRoot.gotoAndStop(2);
+  }, 300);
+  document.getElementById("videoPlay").onended = function ()
+  {
+    videoEnd();
+  };
 
-    // exportRoot.play();
+  // exportRoot.play();
 }
 
 function videoEnd()
 {
-    exportRoot.play();
-    document.getElementById("videoPlay").style.display = "none";
-    console.log("Play");
+  exportRoot.play();
+  document.getElementById("videoPlay").style.display = "none";
+  // intro.play();
+  console.log("Play");
 }
 
 function prepareTheStage()
 {
-    overOut = [
-        // exportRoot["showAnsBtn"],
-        // exportRoot["confirmBtn"],
-        exportRoot["backBtn"],
-    ];
-    for (var i = 0; i < overOut.length; i++)
+  overOut = [
+    exportRoot["showAnsBtn"],
+    exportRoot["confirmBtn"],
+    exportRoot["nextQus"],
+    exportRoot["retryBtn"],
+    exportRoot["startBtn"],
+    exportRoot["backQus"],
+  ];
+  for (var i = 0; i < overOut.length; i++)
+  {
+    l(i);
+    overOut[i].cursor = "pointer";
+    overOut[i].on("mouseover", over);
+    overOut[i].on("mouseout", out);
+  }
+
+  exportRoot["startBtn"].on("mouseover", over);
+  // exportRoot["startBtn2"].on("mouseover", over);
+
+  clickSd = new Howl({
+    src: ["sounds/click.mp3"],
+  });
+  goodSd = new Howl({
+    src: ["sounds/good.mp3"],
+  });
+  errorSd = new Howl({
+    src: ["sounds/error.mp3"],
+  });
+  timeOutSd = new Howl({
+    src: ["sounds/timeOutSd.mp3"],
+  });
+  rightFbSd = new Howl({
+    src: ["sounds/rightFbSd.mp3"],
+  });
+  wrongFbSd = new Howl({
+    src: ["sounds/wrongFbSd.mp3"],
+  });
+  tryFbSd = new Howl({
+    src: ["sounds/tryFbSd.mp3"],
+  });
+  timeFbSd = new Howl({
+    src: ["sounds/timeFbSd.mp3"],
+  });
+  intro = new Howl({
+    src: ["sounds/intro.mp3"],
+  });
+  intro2 = new Howl({
+    src: ["sounds/intro2.mp3"],
+  });
+  quizSd = new Howl({
+    src: ["sounds/quizSd.mp3"],
+  });
+  infoSd = new Howl({
+    src: ["sounds/infoSd.mp3"],
+  });
+  nashat = new Howl({
+    src: ["sounds/nashat.mp3"],
+  });
+
+  soundsArr = [
+    clickSd,
+    goodSd,
+    errorSd,
+    timeOutSd,
+    infoSd,
+    nashat,
+    rightFbSd,
+    wrongFbSd,
+    tryFbSd,
+    timeFbSd,
+    intro,
+    intro2,
+    quizSd,
+  ];
+  stopAllSounds();
+
+  /*	for (var i = 1; i <= numOfAns; i++) {
+    exportRoot["a" + i].id = i;
+    exportRoot["a" + i].xPos = exportRoot["a" + i].x;
+    exportRoot["a" + i].yPos = exportRoot["a" + i].y;
+    exportRoot["a" + i].placeNum = null;
+        
+      //  if(i < 5){
+            
+    exportRoot["p" + i].ansNum = null;
+     //   }
+  }*/
+
+  exportRoot["nextQus"].cursor = "auto";
+  exportRoot["backQus"].cursor = "auto";
+  exportRoot["nextQus"].removeEventListener("click", nextQus);
+  exportRoot["backQus"].removeEventListener("click", backQus);
+
+  for (var i = 1; i <= numOfAns; i++)
+  {
+    exportRoot["a" + i].id = i;
+    exportRoot["a" + i].xPos = exportRoot["a" + i].x;
+    exportRoot["a" + i].yPos = exportRoot["a" + i].y;
+    exportRoot["a" + i].placeNum = null;
+
+    /* if(i>numOfPlaces)
+            {
+                 exportRoot["a" + i].num = 0;
+            }*/
+
+    if (i <= 4)
     {
-        console.log(i);
-        overOut[i].cursor = "pointer";
-        overOut[i].on("mouseover", over);
-        overOut[i].on("mouseout", out);
+      exportRoot["a" + i].ansGroup = 1;
+    } else
+    {
+      exportRoot["a" + i].ansGroup = 2;
     }
+  }
+  hideAns();
+  exportRoot["a" + counAns].alpha = 1;
+  for (var i = 1; i <= numOfPlaces; i++)
+  {
+    exportRoot["p" + i].id = i;
+    exportRoot["p" + i].num = 1;
 
-    // exportRoot["startBtn"].on("mouseover", over2);
+    exportRoot["p" + i].amIChecked = false;
 
-    clickSd = new Howl({
-        src: ["sounds/click.mp3"],
-    });
-    rightFbSd = new Howl({
-        src: ["sounds/rightFbSd.mp3"],
-    });
-    wrongFbSd = new Howl({
-        src: ["sounds/wrongFbSd.mp3"],
-    });
-    quizSd = new Howl({
-        src: ["sounds/quizSd.mp3"],
-    });
-    rightAnswer = new Howl({
-        src: ["sounds/rightAnswer.mp3"],
-    });
-    wrongAnswer = new Howl({
-        src: ["sounds/wrongAnswer.mp3"],
-    });
+    exportRoot["p" + i].ansNum = null;
 
-    soundsArr = [clickSd, rightFbSd, wrongFbSd, quizSd, rightAnswer, wrongAnswer];
+    if (i <= 4)
+    {
+      exportRoot["p" + i].placeGroup = 1;
+    } else
+    {
+      exportRoot["p" + i].placeGroup = 2;
+    }
+  }
+
+  //   exportRoot["startBtn2"].addEventListener("click", function () {
+  // 	stopAllSounds();
+  // 	clickSd.play();
+  // 	exportRoot.play();
+  // });
+
+  exportRoot["startBtn"].addEventListener("click", function ()
+  {
     stopAllSounds();
+    clickSd.play();
+    exportRoot.play();
+  });
 
-    for (var i = 1; i <= numOfAns; i++)
-    {
-        exportRoot["a" + i].id = i;
-        exportRoot["a" + i].placeNum = null;
-        exportRoot["a" + i].clicked = true;
-        if (i >= 4)
-        {
-            exportRoot["a" + i].alpha = 0.7;
-        }
-    }
+  //exportRoot["infoBtn"].addEventListener("click", showInfoFn);
+  //exportRoot["infoWin"]["colseInfoBtn"].addEventListener("click", closeInfoFn);
+  //exportRoot["colseInfoBtn"].addEventListener("click", closeInfoFn);
+  //exportRoot["infoWin"].id = "at the start";
 
-    // exportRoot["confirmBtn"].addEventListener("click", confirmFN);
+  exportRoot["retryBtn"].addEventListener("click", retryFN);
+  exportRoot["showAnsBtn"].addEventListener("click", function ()
+  {
+    //hideFB();
+    //stopAllSounds();
+    //clickSd.play();
+    exportRoot["showAnsBtn"].alpha = 0;
+    exportRoot["answers"].alpha = 1;
+    exportRoot["answers"].gotoAndPlay(0);
+  });
 
-    exportRoot["backBtn"].addEventListener("click", backBtnFn);
-    // exportRoot["showAnsBtn"].addEventListener("click", function () {
-    //     hideFB();
-    //     stopAllSounds();
-    //     // exportRoot["showAnsBtn"].alpha = 0;
-    //     exportRoot["backBtn"].alpha = 1;
-    //     exportRoot["answers"].gotoAndPlay(0);
-    // });
-
-    hideFB();
+  hideFB();
 }
 
 function hideFB()
 {
-    exportRoot["wrongFB"].alpha = 0;
-    exportRoot["wrongFB"].playV = false;
-    exportRoot["rightFB"].alpha = 0;
-    exportRoot["rightFB"].playV = false;
-    exportRoot["ScreenEnd"].alpha = 0;
-    exportRoot["ScreenEnd"].playV = false;
+  exportRoot["wrongFB"].alpha = 0;
+  exportRoot["wrongFB"].playV = false;
+  exportRoot["rightFB"].alpha = 0;
+  exportRoot["rightFB"].playV = false;
+  exportRoot["tryFB"].alpha = 0;
+  exportRoot["tryFB"].playV = false;
+  exportRoot["timeOutFB"].alpha = 0;
+  exportRoot["timeOutFB"].playV = false;
 
-    // exportRoot["fb1"].gotoAndStop(0);
-    // exportRoot["fb2"].gotoAndStop(0);
-    // exportRoot["fb3"].gotoAndStop(0);
+  // exportRoot["fullScore"].alpha = 0;
+  // exportRoot["fullScore"].playV = false;
+  // exportRoot["score_3"].alpha = 0;
+  // exportRoot["score_3"].playV = false;
+  // exportRoot["score_2"].alpha = 0;
+  // exportRoot["score_2"].playV = false;
+  // exportRoot["score_1"].alpha = 0;
+  // exportRoot["score_1"].playV = false;
+  // exportRoot["score_0"].alpha = 0;
+  // exportRoot["score_0"].playV = false;
+  exportRoot["answers"].alpha = 0;
 
-    // exportRoot["answers"].alpha = 0;
-    // exportRoot["answers"].playV = false;
-    // exportRoot["retryBtn"].alpha = 0;
-    // exportRoot["retryBtn"].gotoAndStop(0);
-    // exportRoot["showAnsBtn"].alpha = 0;
-    // exportRoot["showAnsBtn"].gotoAndStop(0);
-    // exportRoot["confirmBtn"].alpha = 0;
-    // exportRoot["confirmBtn"].gotoAndStop(0);
-    exportRoot["backBtn"].alpha = 0;
-    exportRoot["backBtn"].gotoAndStop(0);
+  exportRoot["retryBtn"].alpha = 0;
+  exportRoot["retryBtn"].gotoAndStop(0);
+  exportRoot["showAnsBtn"].alpha = 0;
+  exportRoot["showAnsBtn"].gotoAndStop(0);
+  exportRoot["confirmBtn"].alpha = 0;
+  exportRoot["confirmBtn"].gotoAndStop(0);
 }
 
 function stopAllSounds()
 {
-    for (var s = 0; s < soundsArr.length; s++)
+  for (var s = 0; s < soundsArr.length; s++)
+  {
+    soundsArr[s].stop();
+  }
+}
+
+function activateButtons()
+{
+  //exportRoot["hideSymb"].alpha = 0;
+  for (var i = 1; i <= numOfAns; i++)
+  {
+    if (retryV)
     {
-        soundsArr[s].stop();
+      exportRoot["a" + i].gotoAndStop(0);
+      exportRoot["a" + i].placeNum = null;
+      exportRoot["a" + i].x = exportRoot["a" + i].xPos;
+      exportRoot["a" + i].y = exportRoot["a" + i].yPos;
+
+      //   if(i < 5){
+
+      exportRoot["p" + i].ansNum = null;
+      //     }
     }
+    exportRoot["a" + i].alpha = 1;
+
+    exportRoot["a" + i].cursor = "pointer";
+    exportRoot["a" + i].addEventListener("pressmove", moveFn);
+    exportRoot["a" + i].addEventListener("pressup", pressupFn);
+    exportRoot["a" + i].addEventListener("mouseover", over);
+    exportRoot["a" + i].addEventListener("mouseout", out);
+
+    //exportRoot["p" + i].amIChecked = false;
+  }
+  exportRoot["nextQus"].alpha = 1;
+  exportRoot["backQus"].alpha = 1;
+  exportRoot["nextQus"].cursor = "pointer";
+  exportRoot["backQus"].cursor = "pointer";
+  exportRoot["nextQus"].addEventListener("click", nextQus);
+  exportRoot["backQus"].addEventListener("click", backQus);
+  hideAns();
+  exportRoot["a" + counAns].alpha = 1;
+  exportRoot["confirmBtn"].cursor = "pointer";
+  exportRoot["confirmBtn"].addEventListener("click", confirmFN);
 }
 
 function deactivateButtons()
 {
-    for (var i = 1; i <= ansNumber; i++)
-    {
-        if (exportRoot["a" + i].placeNum == null)
-        {
-            exportRoot["a" + i].cursor = "auto";
-            exportRoot["a" + i].removeEventListener("click", chooseAnsFn);
-            exportRoot["a" + i].removeEventListener("mouseover", over2);
-            exportRoot["a" + i].removeEventListener("mouseout", out);
-        }
-    }
-}
-function closeButtons()
-{
-    for (var i = 1; i <= ansNumber; i++)
-    {
-        exportRoot["a" + i].cursor = "auto";
-        exportRoot["a" + i].removeEventListener("click", chooseAnsFn);
-        exportRoot["a" + i].removeEventListener("mouseover", over2);
-        exportRoot["a" + i].removeEventListener("mouseout", out);
-    }
+  for (var i = 1; i <= numOfAns; i++)
+  {
+    //exportRoot["a" + i].alpha = 0;
+    exportRoot["a" + i].cursor = "auto";
+    // exportRoot["a" + i].placeNum = null;
+    exportRoot["a" + i].removeEventListener("pressmove", moveFn);
+    exportRoot["a" + i].removeEventListener("pressup", pressupFn);
+    exportRoot["a" + i].removeEventListener("mouseover", over);
+    exportRoot["a" + i].removeEventListener("mouseout", out);
+  }
+
+  exportRoot["confirmBtn"].cursor = "auto";
+  exportRoot["confirmBtn"].removeEventListener("click", confirmFN);
 }
 
-function activateAns2()
+function hideAns()
 {
-    if (ansTrueBoolen)
+  for (var i = 1; i <= numOfAns; i++)
+  {
+    exportRoot["a" + i].alpha = 0;
+  }
+}
+function hideAns2()
+{
+  for (var i = 1; i <= numOfAns; i++)
+  {
+    if (exportRoot["a" + counAns].placeNum === null)
     {
-        contAns = 1;
-        numOfAns = 3;
-    } else
-    {
-        contAns = 4;
-        numOfAns = 6;
+      exportRoot["a" + i].alpha = 0;
     }
-    for (var i = contAns; i <= numOfAns; i++)
-    {
-        if (exportRoot["a" + i].placeNum == null)
-        {
-            exportRoot["a" + i].cursor = "pointer";
-            exportRoot["a" + i].alpha = 1;
-            exportRoot["a" + i].addEventListener("click", chooseAnsFn);
-            exportRoot["a" + i].addEventListener("mouseover", over2);
-            exportRoot["a" + i].addEventListener("mouseout", out);
-        }
-    }
+  }
 }
 
-function deactivateAns2()
+var count_array = [];
+
+var remove_count_array = [];
+
+var counter_Index_Array = 1;
+
+function autoShowAnswer(e)
 {
-    if (!ansTrueBoolen)
+  count_array = [];
+
+  remove_count_array = [];
+  for (let d = 1; d <= 8; d++)
+  {
+
+    if (exportRoot["a" + d].placeNum === null)
     {
-        contAns = 1;
-        numOfAns = 3;
-    } else
-    {
-        contAns = 4;
-        numOfAns = 6;
+
+      count_array.push(d);
+
     }
-    for (var i = contAns; i <= numOfAns; i++)
+  }
+
+  var auto_Show_items = count_array.find(myFunction);
+  // counAns = auto_Show_items;
+  counAns = e;
+  function myFunction(value, index, array)
+  {
+    if (counAns >= 1)
     {
-        if (exportRoot["a" + i].placeNum == null)
-        {
-            exportRoot["a" + i].cursor = "auto";
-            exportRoot["a" + i].alpha = 0.7;
-            exportRoot["a" + i].removeEventListener("click", chooseAnsFn);
-            exportRoot["a" + i].removeEventListener("mouseover", over2);
-            exportRoot["a" + i].removeEventListener("mouseout", out);
-        }
+
+      return value > counAns;
+
+    } else if (counAns <= 8)
+    {
+
+      return value < counAns;
+
     }
-    setTimeout(() =>
-    {
-        activateAns2();
-    }, 150);
+  }
+  if (auto_Show_items === 8)
+  {
+    exportRoot["nextQus"].removeEventListener("click", nextQus);
+    exportRoot["nextQus"].alpha = 0.5;
+    exportRoot["nextQus"].cursor = "auto";
+  }
+  console.log(auto_Show_items);
+  console.log(count_array);
+
+  if (auto_Show_items !== undefined)
+  {
+    exportRoot["a" + auto_Show_items].alpha = 1;
+    counAns = auto_Show_items;
+
+  } else if (count_array.length >= 1)
+  {
+    exportRoot["a" + count_array[0]].alpha = 1;
+    counAns = count_array[0];
+  }
+
 }
 
-function chooseAnsFn(e2)
+function nextQus()
 {
-    stopAllSounds();
+  count_array = [];
 
-    if (e2.currentTarget.id <= 3)
-    {
-        if (e2.currentTarget.clicked)
-        {
-            clickSd.play(); // Sounds Click
-            e2.currentTarget.gotoAndStop(4); // Active Button click After Select
-            e2.currentTarget.cursor = "default";
-            e2.currentTarget.removeEventListener("mouseover", over2);
-            e2.currentTarget.removeEventListener("mouseout", out);
-            e2.currentTarget.placeNum = e2.currentTarget.id;
-            e2.currentTarget.clicked = false;
-            prevAns = e2.currentTarget.id;
-            ansTrueBoolen = false;
-            console.log("IF " + ansTrueBoolen);
-            deactivateButtons();
-            deactivateAns2();
-        }
-        // else
-        // {
-        //     exportRoot["a" + prevAns].gotoAndStop(4);
-        //     exportRoot["a" + prevAns].placeNum = null;
-        //     exportRoot["a" + prevAns].clicked = true;
-        //     ansTrueBoolen = true;
-        //     console.log(ansTrueBoolen);
-        //     setTimeout(() =>
-        //     {
-        //         activateAns2();
-        //         deactivateAns2();
-        //     }, 1000);
-        // }
-    } else if (e2.currentTarget.id >= 4)
-    {
-        if (e2.currentTarget.clicked)
-        {
-            clickSd.play(); // Sounds Click
-            e2.currentTarget.gotoAndStop(4); // Active Button click After Select
-            e2.currentTarget.cursor = "default";
-            e2.currentTarget.removeEventListener("mouseover", over2);
-            e2.currentTarget.removeEventListener("mouseout", out);
-            e2.currentTarget.placeNum = e2.currentTarget.id;
-            e2.currentTarget.clicked = false;
-            newAns = e2.currentTarget.id;
-            ansTrueBoolen = true;
-            deactivateButtons();
-            // exportRoot["confirmBtn"].alpha = 1;
-            // exportRoot["confirmBtn"].addEventListener("click", confirmFN);
-            confirmFN();
-        }
-        // else
-        // {
-        //     exportRoot["a" + newAns].gotoAndStop(4);
-        //     exportRoot["a" + newAns].placeNum = null;
-        //     exportRoot["a" + newAns].clicked = true;
-        //     ansTrueBoolen = false;
-        //     setTimeout(() =>
-        //     {
-        //         deactivateAns2();
-        //     }, 1000);
+  remove_count_array = [];
+  for (let d = 1; d <= 8; d++)
+  {
 
-        // exportRoot["confirmBtn"].alpha = 0;
-        // exportRoot["confirmBtn"].removeEventListener("click", confirmFN);
-        // }
-        // exportRoot["a" + prevAns].removeEventListener("click", chooseAnsFn);
+    if (exportRoot["a" + d].placeNum === null)
+    {
+
+      count_array.push(d);
+
     }
+  }
+  for (var i = 1; i <= numOfAns; i++)
+  {
+    if (exportRoot["a" + i].placeNum === null)
+    {
+      exportRoot["a" + i].alpha = 0;
+    }
+  }
+
+  var items_plus = count_array.find(myFunction);
+  // counAns < 7 ? counAns++ : counAns;
+  counAns = items_plus;
+  function myFunction(value, index, array)
+  {
+    if (counAns >= 1)
+    {
+
+      return value > counAns;
+
+    } else if (counAns <= 8)
+    {
+
+      return value < counAns;
+
+    }
+  }
+  if (items_plus === 8)
+  {
+    exportRoot["nextQus"].removeEventListener("click", nextQus);
+    exportRoot["nextQus"].alpha = 0.5;
+    exportRoot["nextQus"].cursor = "auto";
+  } else if (items_plus > 1)
+  {
+    exportRoot["backQus"].addEventListener("click", backQus);
+    exportRoot["backQus"].alpha = 1;
+    exportRoot["backQus"].cursor = "pointer";
+  }
+  console.log(items_plus);
+
+  if (items_plus !== undefined)
+  {
+    exportRoot["a" + items_plus].alpha = 1;
+    counAns = items_plus;
+
+  } else if (count_array.length >= 1)
+  {
+    exportRoot["a" + count_array[0]].alpha = 1;
+    counAns = count_array[0];
+  }
+
+}
+
+function backQus()
+{
+  count_array = [];
+
+  remove_count_array = [];
+  for (let d = 1; d <= 8; d++)
+  {
+
+    if (exportRoot["a" + d].placeNum === null)
+    {
+
+      count_array.push(d);
+
+    }
+  }
+
+  for (var i = 1; i <= numOfAns; i++)
+  {
+    if (exportRoot["a" + i].placeNum === null)
+    {
+      exportRoot["a" + i].alpha = 0;
+    }
+  }
+
+  count_array.reverse();
+  var items_mens = count_array.find(myFunction);
+  // counAns > 1 ? counAns-- : counAns;
+  counAns = items_mens;
+  function myFunction(value, index, array)
+  {
+    if (counAns >= 1)
+    {
+
+      return value < counAns;
+
+    } else if (counAns <= 8)
+    {
+
+      return value > counAns;
+
+    }
+  }
+
+  if (items_mens === 1)
+  {
+    exportRoot["backQus"].removeEventListener("click", backQus);
+    exportRoot["backQus"].alpha = 0.5;
+    exportRoot["backQus"].cursor = "auto";
+
+  } else if (items_mens < 8)
+  {
+    exportRoot["nextQus"].addEventListener("click", nextQus);
+    exportRoot["nextQus"].alpha = 1;
+    exportRoot["nextQus"].cursor = "pointer";
+  }
+
+  console.log(items_mens);
+
+  if (items_mens !== undefined)
+  {
+    exportRoot["a" + items_mens].alpha = 1;
+    counAns = items_mens;
+
+  } else if (count_array.length >= 1)
+  {
+    exportRoot["a" + count_array[0]].alpha = 1;
+    counAns = count_array[0];
+  }
+
+}
+
+function moveFn(e)
+{
+  bounds = exportRoot.getBounds();
+  e.currentTarget.disX = stage.mouseX - e.currentTarget.x;
+  e.currentTarget.disY = stage.mouseY - e.currentTarget.y;
+  e.currentTarget.x = e.stageX / stage.scaleX;
+  e.currentTarget.y = e.stageY / stage.scaleY;
+  // e.currentTarget.x = Math.max(bounds.x+e.currentTarget.nominalBounds.width/2.1, Math.min(bounds.x+bounds.width-e.currentTarget.nominalBounds.width/1.65, e.stageX / (stage.scaleX)));
+  // e.currentTarget.y = Math.max(bounds.y+e.currentTarget.nominalBounds.height/1.7, Math.min(bounds.y+bounds.height-e.currentTarget.nominalBounds.height/1.9, e.stageY / (stage.scaleY)));
+  e.currentTarget.removeEventListener("mouseover", over);
+  e.currentTarget.removeEventListener("mouseout", out);
+  exportRoot.addChild(e.currentTarget);
+  e.currentTarget.gotoAndStop(2);
+}
+
+function pressupFn(e2)
+{
+  found = false;
+  if (timeCounter > 0)
+  {
+    for (var i = 1; i <= numOfPlaces; i++)
+    {
+      if (
+        Math.abs(e2.currentTarget.x - exportRoot["p" + i].x) < 198 &&
+        Math.abs(e2.currentTarget.y - exportRoot["p" + i].y) < 57
+      )
+      {
+        stopAllSounds();
+        clickSd.play();
+        found = true;
+        if (
+          exportRoot["p" + i].ansNum == null &&
+          e2.currentTarget.placeNum == null
+        )
+        {
+          counter++;
+          e2.currentTarget.placeNum = i;
+          autoShowAnswer(e2.currentTarget.id);
+        }
+
+        if (exportRoot["p" + i].ansNum !== null)
+        {
+          var prevAnsNum = exportRoot["p" + i].ansNum;
+          if (e2.currentTarget.placeNum !== null)
+          {
+            var prevPlaceNum = e2.currentTarget.placeNum;
+            createjs.Tween.get(exportRoot["a" + prevAnsNum], {
+              override: true,
+            }).to(
+              {
+                x: exportRoot["p" + prevPlaceNum].x,
+                y: exportRoot["p" + prevPlaceNum].y,
+              },
+              150,
+              createjs.Ease.easeOut
+            );
+            exportRoot["a" + prevAnsNum].placeNum = prevPlaceNum;
+            exportRoot["p" + prevPlaceNum].ansNum = prevAnsNum;
+          } else
+          {
+            createjs.Tween.get(exportRoot["a" + prevAnsNum], {
+              override: true,
+            }).to(
+              {
+                x: exportRoot["a" + prevAnsNum].xPos,
+                y: exportRoot["a" + prevAnsNum].yPos,
+              },
+              200,
+              createjs.Ease.easeOut
+            );
+            autoShowAnswer(exportRoot["a" + prevAnsNum].id);
+            exportRoot["a" + prevAnsNum].placeNum = null;
+            exportRoot["a" + prevAnsNum].alpha = 0;
+            exportRoot["a" + prevAnsNum].addEventListener("mouseover", over);
+            exportRoot["a" + prevAnsNum].addEventListener("mouseout", out);
+            exportRoot["a" + prevAnsNum].gotoAndStop(0);
+          }
+        } else
+        {
+          if (e2.currentTarget.placeNum !== null)
+          {
+            var prevPlaceNum = e2.currentTarget.placeNum;
+            exportRoot["p" + prevPlaceNum].ansNum = null;
+          }
+        }
+
+        e2.currentTarget.x = exportRoot["p" + i].x;
+        e2.currentTarget.y = exportRoot["p" + i].y;
+        e2.currentTarget.addEventListener("pressmove", moveFn);
+        e2.currentTarget.addEventListener("pressup", pressupFn);
+        e2.currentTarget.gotoAndStop(2);
+        e2.currentTarget.placeNum = i;
+
+        exportRoot["p" + i].ansNum = e2.currentTarget.id;
+
+        if (counter == numOfPlaces)
+        {
+          exportRoot.confirmBtn.alpha = 1;
+          exportRoot["nextQus"].removeEventListener("click", nextQus);
+          exportRoot["backQus"].removeEventListener("click", backQus);
+          exportRoot["nextQus"].alpha = 0.5;
+          exportRoot["backQus"].alpha = 0.5;
+          exportRoot["nextQus"].cursor = "auto";
+          exportRoot["backQus"].cursor = "auto";
+        } else
+        {
+          exportRoot.confirmBtn.alpha = 0;
+          exportRoot["nextQus"].addEventListener("click", nextQus);
+          exportRoot["backQus"].addEventListener("click", backQus);
+          exportRoot["nextQus"].alpha = 1;
+          exportRoot["backQus"].alpha = 1;
+          exportRoot["nextQus"].cursor = "pointer";
+          exportRoot["backQus"].cursor = "pointer";
+          // nextQus();
+        }
+        break;
+      }
+
+    }
+
+    if (found == false)
+    {
+      if (e2.currentTarget.placeNum !== null)
+      {
+        var prevPlaceNum = e2.currentTarget.placeNum;
+        exportRoot["p" + prevPlaceNum].ansNum = null;
+        e2.currentTarget.placeNum = null;
+        // exportRoot["a" + prevPlaceNum].alpha = 0;
+
+        counter--;
+        l("if-- counter = " + counter);
+        exportRoot.confirmBtn.alpha = 0;
+        exportRoot["nextQus"].addEventListener("click", nextQus);
+        exportRoot["backQus"].addEventListener("click", backQus);
+        exportRoot["nextQus"].alpha = 1;
+        exportRoot["backQus"].alpha = 1;
+        exportRoot["nextQus"].cursor = "pointer";
+        exportRoot["backQus"].cursor = "pointer";
+        // nextQus();
+        // counAns > 1 ? counAns-- : counAns;
+      }
+      for (var i = 1; i <= numOfAns; i++)
+      {
+        if (exportRoot["a" + i].placeNum === null)
+        {
+          exportRoot["a" + i].alpha = 0;
+        }
+      }
+
+      e2.currentTarget.addEventListener("mouseover", over);
+      e2.currentTarget.addEventListener("mouseout", out);
+      e2.currentTarget.gotoAndStop(0);
+      e2.currentTarget.alpha = 1;
+
+      createjs.Tween.get(e2.currentTarget, {
+        override: true,
+      }).to(
+        {
+          x: e2.currentTarget.xPos,
+          y: e2.currentTarget.yPos,
+        },
+        300,
+        createjs.Ease.easeOut
+      );
+    }
+  }
+
+  /*l("counter = " + counter)
+  l("exportRoot.ans1.placeNum " + exportRoot.ans1.placeNum)
+  l("exportRoot.ans2.placeNum " + exportRoot.ans2.placeNum)
+  l("exportRoot.ans3.placeNum " + exportRoot.ans3.placeNum)
+  l("exportRoot.place1.ansNum " + exportRoot.place1.ansNum)
+  l("exportRoot.place2.ansNum " + exportRoot.place2.ansNum)
+  l("exportRoot.place3.ansNum " + exportRoot.place3.ansNum)*/
 }
 
 function confirmFN()
 {
-    closeButtons();
-    // exportRoot["confirmBtn"].alpha = 0;
-    stopAllSounds();
-    clickSd.play();
-    // if (prevAns + 3 == newAns)
-    // {
-    //     score++;
-    // console.log("score " + score);
-    // exportRoot["rightFB"].playV = true;
-    // exportRoot["rightFB"].alpha = 1;
-    // exportRoot["rightFB"].gotoAndPlay(0);
-    // console.log('newAns:- ' + newAns);
-    // } else
-    // {
-    //     exportRoot["wrongFB"].playV = true;
-    //     exportRoot["wrongFB"].alpha = 1;
-    //     exportRoot["wrongFB"].gotoAndPlay(0);
-    // }
-    retryFN();
+  stopAllSounds();
+  clickSd.play();
+  clearInterval(timerInterval);
+  hideFB();
+  deactivateButtons();
+  hideAns();
+  //exportRoot["hideSymb"].alpha = 1;
+  /*for (var i = 1; i <= numOfAns; i++) {
+    if (exportRoot["a" + i].id == exportRoot["a" + i].placeNum) {
+      score++;
+    }
+  }*/
+  for (var i = 1; i <= numOfAns; i++)
+  {
+    //  var targetPlace = exportRoot["p" + i];
+
+    var targetPlace = exportRoot["a" + i].placeNum;
+    console.log("targetPlace" + targetPlace);
+    if (
+      exportRoot["a" + i].ansGroup == exportRoot["p" + targetPlace].placeGroup
+    )
+    {
+      score++;
+    }
+  }
+  if (score == numOfPlaces)
+  {
+    exportRoot["rightFB"].playV = true;
+    exportRoot["rightFB"].alpha = 1;
+    exportRoot["rightFB"].gotoAndPlay(0);
+    // setTimeout(function(){exportRoot.showAnsBtn.alpha=1;},5500);
+  } else
+  {
+    attempts++;
+    if (attempts == maxAttempts)
+    {
+      exportRoot["wrongFB"].playV = true;
+      exportRoot["wrongFB"].alpha = 1;
+      exportRoot["wrongFB"].gotoAndPlay(0);
+      //  setTimeout(function(){exportRoot.showAnsBtn.alpha=1;},6500);
+    } else
+    {
+      exportRoot["tryFB"].playV = true;
+      exportRoot["tryFB"].alpha = 1;
+      exportRoot["tryFB"].gotoAndPlay(0);
+      // setTimeout(function(){exportRoot.retryBtn.alpha=1;},5500);
+    }
+  }
 }
 
 function retryFN()
 {
-    if (prevAns + 3 == newAns)
-    {
-        score++;
-        exportRoot["a" + prevAns].gotoAndStop(5);
-        exportRoot["a" + prevAns].clicked = true;
-        exportRoot["a" + newAns].gotoAndStop(5);
-        exportRoot["a" + newAns].clicked = true;
-        exportRoot["a" + newAns].alpha = 1;
-        exportRoot["fb" + prevAns].gotoAndPlay(2);
-        rightAnswer.play();
-    } else
-    {
-        attempts++;
-        exportRoot["a" + prevAns].gotoAndStop(6);
-        exportRoot["a" + prevAns].placeNum = null;
-        exportRoot["a" + prevAns].clicked = true;
-        exportRoot["a" + newAns].gotoAndStop(6);
-        exportRoot["a" + newAns].placeNum = null;
-        exportRoot["a" + newAns].alpha = 1;
-        exportRoot["a" + newAns].clicked = true;
-        wrongAnswer.play();
-    }
-    stopAllSounds();
-    hideFB();
-    setTimeout(() =>
-    {
-        if (score == 3 && attempts < 3)
-        {
-            for (let i = 0; i <= 3; i++)
-            {
-                exportRoot["fb" + i].alpha = 0;
-            }
-            exportRoot["ScreenEnd"].alpha = 1;
-            exportRoot["ScreenEnd"].playV = true;
-            exportRoot["ScreenEnd"].gotoAndPlay(0);
-        } else if (attempts == 3)
-        {
-            exportRoot["wrongFB"].playV = true;
-            exportRoot["wrongFB"].alpha = 1;
-            exportRoot["wrongFB"].gotoAndPlay(0);
-        }
-    }, 1000);
-    setTimeout(() =>
-    {
-        deactivateAns2();
-    }, 1900);
+  stopAllSounds();
+  clickSd.play();
+  counter = 0;
+  counAns = 1;
+  score = 0;
+  hideFB();
+  retryV = true;
+  activateButtons();
+  retryV = false;
+  Timer();
 }
 
 function over(e)
 {
-    e.currentTarget.gotoAndStop(1);
+  e.currentTarget.gotoAndStop(1);
 }
+
 function over2(e)
 {
-    e.currentTarget.gotoAndStop(2);
+  e.currentTarget.gotoAndStop(2);
 }
 
 function out(e)
 {
-    e.currentTarget.gotoAndStop(0);
+  e.currentTarget.gotoAndStop(0);
 }
 
-function backBtnFn()
+function Timer()
 {
-    attempts = 0;
-    score = 0;
-    ansTrueBoolen = true;
-    deactivateButtons();
-    deactivateAns2();
-    hideFB();
-    exportRoot.gotoAndPlay('firstAn');
-    for (let i = 0; i <= 3; i++)
+  timeCounter = 60;
+  timerFrame = 0;
+  exportRoot["timerSymb"].gotoAndStop(timerFrame);
+  timerInterval = setInterval(timerFn, 1000);
+}
+
+function timerFn()
+{
+  timerFrame++;
+  timeCounter--;
+  exportRoot["timerSymb"].gotoAndStop(timerFrame);
+  if (timeCounter == 0)
+  {
+    timeOut();
+  }
+}
+
+function timeOut()
+{
+  deactivateButtons();
+  clearInterval(timerInterval);
+  stopAllSounds();
+  timeOutSd.play();
+  setTimeout(function ()
+  {
+    hideAns();
+    //	exportRoot["hideSymb"].alpha = 1;
+    attempts++;
+    if (attempts == maxAttempts)
     {
-        exportRoot["fb" + i].alpha = 1;
+      exportRoot["wrongFB"].playV = true;
+      exportRoot["wrongFB"].alpha = 1;
+      exportRoot["wrongFB"].gotoAndPlay(0);
+    } else
+    {
+      exportRoot["timeOutFB"].playV = true;
+      exportRoot["timeOutFB"].alpha = 1;
+      exportRoot["timeOutFB"].gotoAndPlay(0);
     }
-    for (var i = 1; i <= numOfAns; i++)
-    {
-        exportRoot["a" + i].id = i;
-        exportRoot["a" + i].placeNum = null;
-        exportRoot["a" + i].clicked = true;
-        if (i >= 4)
-        {
-            exportRoot["a" + i].alpha = 0.7;
-        }
+  }, 800);
+}
+
+function showBtns()
+{
+  if (score == numOfPlaces || attempts == maxAttempts)
+  {
+    exportRoot["showAnsBtn"].alpha = 1;
+  } else
+  {
+    exportRoot["retryBtn"].alpha = 1;
+  }
+}
+
+/*function showScore() {
+    if (score == numOfPlaces) {
+        exportRoot["fullScore"].playV = true;
+        exportRoot["fullScore"].alpha = 1;
+        exportRoot["fullScore"].gotoAndPlay(0);
+    } else{
+        exportRoot["score_" + score].playV = true;
+        exportRoot["score_" + score].alpha = 1;
+        exportRoot["score_" + score].gotoAndPlay(0);
     }
 }
-function activated()
-{
-    setTimeout(() =>
-    {
-        activateAns2();
-    }, 1000);
-}
+// */
+// function showScore() {
+//     if (score == numOfPlaces) {
+//         exportRoot["fullScore"].playV = true;
+//         exportRoot["fullScore"].alpha = 1;
+//         exportRoot["fullScore"].gotoAndPlay(0);
+//     } else {
+// 		if(score >= 0 && score <= 1){
+
+//         exportRoot["score_0"].playV = true;
+//         exportRoot["score_0"].alpha = 1;
+//         exportRoot["score_0"].gotoAndPlay(0);
+
+//     } else if(score > 2 && score <= 3){
+// 		  exportRoot["score_1"].playV = true;
+//         exportRoot["score_1"].alpha = 1;
+//         exportRoot["score_1"].gotoAndPlay(0);
+
+// 	}else if(score > 3 && score <= 5){
+
+// 		  exportRoot["score_2"].playV = true;
+//         exportRoot["score_2"].alpha = 1;
+//         exportRoot["score_2"].gotoAndPlay(0);
+
+// 			 }else if(score > 5 && score <=7){
+// 				 exportRoot["score_3"].playV =true;
+// 				 exportRoot["score_3"].alpha=1;
+// 				 exportRoot["score_3"].gotoAndPlay(0);
+
+// 					  }
+// }
+// }
+
+
+// else if (player.GetVar(`Active_Ans_${num}`) == false)
+// {
+
+//   //player.SetVar(`Active_Ans_${--num}`,false);
+
+//   console.log('Active_Ans_' + num + ' false');
+
+//   //player.SetVar(`Active_Ans_${++num}`,true);
+
+//   console.log('Active_Ans_' + num + ' true');
+
+// } else if (player.GetVar(`Active_Ans_${num}`) == true &&
+// player.GetVar(`Drop_Area_${num}`) == player.GetVar("Drag_"+i) ||
+// player.GetVar(`Drop_Area_${num}`) == player.GetVar("Drag_"+i) ||
+// player.GetVar(`Drop_Area_${num}`) == player.GetVar("Drag_"+i) ||
+// player.GetVar(`Drop_Area_${num}`) == player.GetVar("Drag_"+i) ||
+// player.GetVar(`Drop_Area_${num}`) == player.GetVar("Drag_"+i) ||
+// player.GetVar(`Drop_Area_${num}`) == player.GetVar("Drag_"+i) ||
+// player.GetVar(`Drop_Area_${num}`) == player.GetVar("Drag_"+i) ||
+// player.GetVar(`Drop_Area_${num}`) == player.GetVar("Drag_"+i))
+// {
+
+//   //player.SetVar(`Active_Ans_${--num}`,false);
+
+//   //player.SetVar(`Active_Ans_${++num}`,true);
+// }
+
+
+
+
+// var player = GetPlayer();
+
+// var count;
+// var count_array = [];
+// for (let i = 1; i < count_array.length; i++)
+// {
+
+//   if (player.GetVar(`Active_Ans_${i}`) == true && count_array.includes(i))
+//   {
+
+//     count_array.splice(i, 1);
+
+//   } else if (player.GetVar(`Active_Ans_${i}`) == false)
+//   {
+
+//     count_array[i].push(i);
+
+//   }
+// }
+
+// count = player.GetVar('counter_Show_Ans');
+
+
+// count_array.forEach(item =>
+// {
+//   player.SetVar('counter_Show_Ans', item);
+// });
+
+
+// count = player.GetVar('counter_Show_Ans');
+// num = count;
+// player.SetVar('counter_Show_Ans', num);
+// console.log(num);
+// for (let i = 8; i > 1; i--)
+// {
+//   if (player.GetVar(`Drop_Area_${num}`) == player.GetVar("Drag_" + i))
+//   {
+
+//     console.log('Active_Ans_' + num + ' false');
+
+//     if (player.GetVar(`Active_Ans_${num - 1}`) == false)
+//     {
+
+//       num > 1 ? num-- : num;
+//       console.log('Active_Ans_' + num + ' true');
+//       player.SetVar('counter_Show_Ans', num);
+//       console.log(num);
+//       break;
+//     }
+
+
+//   } else if (player.GetVar(`Active_Ans_${num - 1}`) == )
+//   {
+
+//     num > 1 ? num-- : num;
+//     player.SetVar('counter_Show_Ans', num);
+//     console.log(num);
+//   }
+// }
